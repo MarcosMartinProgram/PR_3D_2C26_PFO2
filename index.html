@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PFO 2 - Demostración API Flask</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --success: #22c55e;
+      --error: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding: 2rem 1rem; display: flex; justify-content: center; }
+    .container { width: 100%; max-width: 800px; }
+    header { text-align: center; margin-bottom: 2rem; }
+    header h1 { font-size: 1.8rem; margin-bottom: 0.5rem; color: #60a5fa; }
+    header p { color: var(--muted); font-size: 0.95rem; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+    @media(max-width: 650px) { .grid { grid-template-columns: 1fr; } }
+    .card { background-color: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem; }
+    .card h2 { font-size: 1.15rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+    .form-group { margin-bottom: 0.85rem; }
+    label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.25rem; }
+    input { width: 100%; padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid var(--border); background: #0f172a; color: var(--text); font-size: 0.9rem; }
+    input:focus { outline: none; border-color: var(--primary); }
+    button { width: 100%; padding: 0.6rem; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 0.9rem; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-secondary { background: #475569; color: white; margin-top: 0.5rem; }
+    .btn-secondary:hover { background: #334155; }
+    .btn-danger { background: #991b1b; color: white; margin-top: 0.5rem; }
+    .btn-danger:hover { background: #7f1d1d; }
+    .response-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem; }
+    .status-badge { display: inline-block; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem; font-weight: bold; margin-bottom: 0.5rem; }
+    .status-ok { background: rgba(34, 197, 94, 0.2); color: var(--success); }
+    .status-err { background: rgba(239, 68, 68, 0.2); color: var(--error); }
+    pre { background: #090d16; border: 1px solid var(--border); border-radius: 6px; padding: 0.75rem; font-size: 0.85rem; overflow-x: auto; color: #38bdf8; }
+    iframe { width: 100%; height: 260px; border: 1px solid var(--border); border-radius: 6px; background: white; margin-top: 0.5rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>PFO 2: Panel de Pruebas de la API REST</h1>
+      <p>Servidor local destino: <code>http://127.0.0.1:5000</code></p>
+    </header>
+
+    <div class="grid">
+      <!-- Registro -->
+      <div class="card">
+        <h2>1. POST /registro</h2>
+        <div class="form-group">
+          <label for="reg-user">Usuario</label>
+          <input type="text" id="reg-user" placeholder="ej: marcos">
+        </div>
+        <div class="form-group">
+          <label for="reg-pass">Contraseña</label>
+          <input type="password" id="reg-pass" placeholder="••••••••">
+        </div>
+        <button class="btn-primary" onclick="ejecutarRegistro()">Registrar Usuario</button>
+      </div>
+
+      <!-- Login -->
+      <div class="card">
+        <h2>2. POST /login</h2>
+        <div class="form-group">
+          <label for="log-user">Usuario</label>
+          <input type="text" id="log-user" placeholder="ej: marcos">
+        </div>
+        <div class="form-group">
+          <label for="log-pass">Contraseña</label>
+          <input type="password" id="log-pass" placeholder="••••••••">
+        </div>
+        <button class="btn-primary" onclick="ejecutarLogin()">Iniciar Sesión</button>
+        <button class="btn-danger" onclick="ejecutarLogout()">Cerrar Sesión</button>
+      </div>
+    </div>
+
+    <!-- Gestión de Tareas -->
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <h2>3. GET /tareas (Requiere Autenticación)</h2>
+      <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 1rem;">
+        Consume el endpoint protegido. Si hay sesión iniciada, mostrará el HTML de bienvenida. Si no, retornará un error HTTP 401.
+      </p>
+      <button class="btn-secondary" onclick="consultarTareas()">Consultar /tareas</button>
+    </div>
+
+    <!-- Respuestas -->
+    <div class="response-card">
+      <h2>Resultado de la Petición</h2>
+      <div id="status-container"></div>
+      <pre id="output">Esperando acciones...</pre>
+      <div id="html-preview" style="display: none;">
+        <h3 style="font-size: 0.9rem; margin-top: 1rem; color: var(--muted);">Renderizado del HTML retornado:</h3>
+        <iframe id="preview-frame"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const BASE_URL = "http://127.0.0.1:5000";
+
+    function mostrarRespuesta(status, ok, data, esHtml = false) {
+      const statusBox = document.getElementById("status-container");
+      const output = document.getElementById("output");
+      const htmlPreview = document.getElementById("html-preview");
+      const iframe = document.getElementById("preview-frame");
+
+      statusBox.innerHTML = `<span class="status-badge ${ok ? 'status-ok' : 'status-err'}">HTTP ${status}</span>`;
+      
+      if (esHtml) {
+        output.textContent = "[HTML recibido del servidor]";
+        htmlPreview.style.display = "block";
+        iframe.srcdoc = data;
+      } else {
+        htmlPreview.style.display = "none";
+        output.textContent = JSON.stringify(data, null, 2);
+      }
+    }
+
+    async function ejecutarRegistro() {
+      const usuario = document.getElementById("reg-user").value;
+      const pass = document.getElementById("reg-pass").value;
+      try {
+        const res = await fetch(`${BASE_URL}/registro`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ "usuario": usuario, "contraseña": pass })
+        });
+        const data = await res.json();
+        mostrarRespuesta(res.status, res.ok, data);
+      } catch (err) {
+        mostrarRespuesta(0, false, { error: "No se pudo conectar con el servidor local Flask en 127.0.0.1:5000" });
+      }
+    }
+
+    async function ejecutarLogin() {
+      const usuario = document.getElementById("log-user").value;
+      const pass = document.getElementById("log-pass").value;
+      try {
+        const res = await fetch(`${BASE_URL}/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ "usuario": usuario, "contraseña": pass })
+        });
+        const data = await res.json();
+        mostrarRespuesta(res.status, res.ok, data);
+      } catch (err) {
+        mostrarRespuesta(0, false, { error: "No se pudo conectar con el servidor local Flask" });
+      }
+    }
+
+    async function consultarTareas() {
+      try {
+        const res = await fetch(`${BASE_URL}/tareas`, {
+          method: "GET",
+          credentials: "include"
+        });
+        if (res.ok) {
+          const html = await res.text();
+          mostrarRespuesta(res.status, true, html, true);
+        } else {
+          const data = await res.json();
+          mostrarRespuesta(res.status, false, data);
+        }
+      } catch (err) {
+        mostrarRespuesta(0, false, { error: "No se pudo conectar con el servidor local Flask" });
+      }
+    }
+
+    async function ejecutarLogout() {
+      try {
+        const res = await fetch(`${BASE_URL}/logout`, {
+          method: "POST",
+          credentials: "include"
+        });
+        const data = await res.json();
+        mostrarRespuesta(res.status, res.ok, data);
+      } catch (err) {
+        mostrarRespuesta(0, false, { error: "No se pudo conectar con el servidor local Flask" });
+      }
+    }
+  </script>
+</body>
+</html>
